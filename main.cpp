@@ -47,20 +47,16 @@ typedef struct {
 
 typedef struct {
     unsigned char filename[8];
-    //char* filename = (char* ) malloc(sizeof(8));
     unsigned char ext[3];
     unsigned char attributes;
     unsigned char reserved[10];
     unsigned short creation_time;
     unsigned short creation_date;
-    //unsigned short last_access_date;
-    //unsigned short last_write_time;
-    //unsigned short last_write_date;
     unsigned short starting_cluster;
     unsigned int file_size;
 } __attribute((packed)) Fat16Entry;
 
-/*void print_file_info(Fat16Entry *entry) {
+void print_file_info(Fat16Entry *entry) {
     switch (entry->filename[0]) {
         case 0x00:
             return; // unused entry
@@ -78,23 +74,13 @@ typedef struct {
     }
 
     printf("  Modified: %04d-%02d-%02d %02d:%02d.%02d    Start: [%04X]    Size: %d\n",
-            1980 + (entry->last_write_time >> 9), (entry->last_write_time >> 5) & 0xF, entry->last_write_time & 0x1F,
+            1980 + (entry->creation_time >> 9), (entry->creation_time >> 5) & 0xF, entry->creation_time & 0x1F,
             (entry->creation_time >> 11), (entry->creation_time >> 5) & 0x3F, entry->creation_time & 0x1F,
             entry->starting_cluster, entry->file_size);
-}*/
+}
 
-int main(int argc, char** argv) {
-
-    FILE * in = fopen("disco2.IMA", "rb");
-    int i;
-    PartitionTable pt[4];
-    Fat16BootSector bs;
-    Fat16Entry entry;
-    unsigned long fat_start, root_start, data_start;
-
-    fseek(in, 0x1BE, SEEK_SET); // go to partition table start
-    fread(pt, sizeof (PartitionTable), 4, in); // read all four entries
-
+int readPartitionTable(PartitionTable pt[]) {
+    int i = 0;
     printf("---------- Partition Table ----------\n\n");
     for (i = 0; i < 4; i++) {
         printf("Partition %d, type %02X\n", i, pt[i].partition_type);
@@ -114,11 +100,9 @@ int main(int argc, char** argv) {
         printf("No FAT16 filesystem found, exiting...\n");
         return -1;
     }
+}
 
-    //fseek(in, 512 * pt[i].start_sector, SEEK_SET);
-    fseek(in, pt[0].start_sector, SEEK_SET);
-    fread(&bs, sizeof (Fat16BootSector), 1, in);
-
+void readBootSector(Fat16BootSector bs, FILE * in) {
     printf("\n\n---------- Fat16 Boot Sector ----------\n\n");
     printf("  Jump code: %02X:%02X:%02X\n", bs.jmp[0], bs.jmp[1], bs.jmp[2]);
     printf("  OEM code: [%.8s]\n", bs.oem);
@@ -147,6 +131,42 @@ int main(int argc, char** argv) {
     printf("\nNow at 0x%X, sector size %d, FAT size %d sectors, %d FATs\n",
             ftell(in), bs.sector_size, bs.sectors_per_fat, bs.number_of_fats);
 
+}
+
+int readRootDirectory(Fat16Entry entry, Fat16BootSector bs, FILE * in) {
+    int i = 0, j = 0;
+    for (i = 0; i < bs.root_dir_entries; i++) {
+        fread(&entry, sizeof (entry), 1, in);
+
+        if (entry.filename[0] != '\0') {
+            print_file_info(&entry);
+            j++;
+        }
+    }
+
+    if (i == j) {
+        printf("File not found!");
+        return -1;
+    }
+
+    printf("\nRoot directory read, now at 0x%X\n", ftell(in));
+}
+
+int main(int argc, char** argv) {
+    FILE * in = fopen("disco2.IMA", "rb");
+    PartitionTable pt[4];
+    Fat16BootSector bs;
+    Fat16Entry entry;
+    short op;
+    unsigned long fat_start, root_start, data_start;
+
+    fseek(in, 0x1BE, SEEK_SET); // go to partition table start
+    fread(pt, sizeof (PartitionTable), 4, in); // read all four entries
+    readPartitionTable(pt);
+
+    fseek(in, 0x000, SEEK_SET);
+    fread(&bs, sizeof (Fat16BootSector), 1, in);
+    readBootSector(bs, in);
 
     // Calculate start offsets of FAT, root directory and data
     fat_start = ftell(in) + (bs.reserved_sectors - 1) * bs.sector_size;
@@ -158,20 +178,8 @@ int main(int argc, char** argv) {
             fat_start, root_start, data_start);
 
     fseek(in, root_start, SEEK_SET);
+    readRootDirectory(entry, bs, in);
 
-    for (i = 0; i < bs.root_dir_entries; i++) {
-        fread(&entry, sizeof (entry), 1, in);
-        //print_file_info(&entry);
-        if (entry.filename[0] != '\0')
-            printf("Filename: %.8s.%.3s\n", entry.filename, entry.ext);
-    }
-
-    if (i == bs.root_dir_entries) {
-        printf("File not found!");
-        return -1;
-    }
-
-    printf("\nRoot directory read, now at 0x%X\n", ftell(in));
 
     fclose(in);
     return 0;
