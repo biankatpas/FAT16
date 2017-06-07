@@ -46,8 +46,8 @@ typedef struct {
 } __attribute((packed)) Fat16BootSector;
 
 typedef struct {
-    unsigned char filename[8];
-    unsigned char ext[3];
+    char filename[8];
+    char ext[3];
     unsigned char attributes;
     unsigned char reserved[10];
     unsigned short creation_time;
@@ -56,7 +56,7 @@ typedef struct {
     unsigned int file_size;
 } __attribute((packed)) Fat16Entry;
 
-void print_file_info(Fat16Entry *entry) {
+void printFileInfo(Fat16Entry *entry) {
     switch (entry->filename[0]) {
         case 0x00:
             return; // unused entry
@@ -79,7 +79,7 @@ void print_file_info(Fat16Entry *entry) {
             entry->starting_cluster, entry->file_size);
 }
 
-int readPartitionTable(PartitionTable pt[]) {
+int printPartitionTable(PartitionTable pt[]) {
     int i = 0;
     printf("---------- Partition Table ----------\n\n");
     for (i = 0; i < 4; i++) {
@@ -102,7 +102,7 @@ int readPartitionTable(PartitionTable pt[]) {
     }
 }
 
-void readBootSector(Fat16BootSector bs, FILE * in) {
+void printBootSector(Fat16BootSector bs, FILE * in) {
     printf("\n\n---------- Fat16 Boot Sector ----------\n\n");
     printf("  Jump code: %02X:%02X:%02X\n", bs.jmp[0], bs.jmp[1], bs.jmp[2]);
     printf("  OEM code: [%.8s]\n", bs.oem);
@@ -133,13 +133,13 @@ void readBootSector(Fat16BootSector bs, FILE * in) {
 
 }
 
-int readRootDirectory(Fat16Entry entry, Fat16BootSector bs, FILE * in) {
+int printRootDirectory(Fat16Entry entry, Fat16BootSector bs, FILE * in) {
     int i = 0, j = 0;
     for (i = 0; i < bs.root_dir_entries; i++) {
         fread(&entry, sizeof (entry), 1, in);
 
         if (entry.filename[0] != '\0') {
-            print_file_info(&entry);
+            printFileInfo(&entry);
             j++;
         }
     }
@@ -152,21 +152,70 @@ int readRootDirectory(Fat16Entry entry, Fat16BootSector bs, FILE * in) {
     printf("\nRoot directory read, now at 0x%X\n", ftell(in));
 }
 
+void readFile(FILE * in, FILE * out,
+        unsigned long fat_start,
+        unsigned long data_start,
+        unsigned long cluster_size,
+        unsigned short cluster,
+        unsigned long file_size) {
+    unsigned char buffer[4096];
+    size_t bytes_read, bytes_to_read,
+            file_left = file_size, cluster_left = cluster_size;
+
+    // Go to first data cluster
+    fseek(in, data_start + cluster_size * (cluster - 2), SEEK_SET);
+
+    // Read until we run out of file or clusters
+    while (file_left > 0 && cluster != 0xFFFF) {
+        bytes_to_read = sizeof (buffer);
+
+        // don't read past the file or cluster end
+        if (bytes_to_read > file_left)
+            bytes_to_read = file_left;
+        if (bytes_to_read > cluster_left)
+            bytes_to_read = cluster_left;
+
+        // read data from cluster, write to file
+        bytes_read = fread(buffer, 1, bytes_to_read, in);
+        fwrite(buffer, 1, bytes_read, out);
+        printf("Copied %d bytes\n", bytes_read);
+
+        // decrease byte counters for current cluster and whole file
+        cluster_left -= bytes_read;
+        file_left -= bytes_read;
+
+        // if we have read the whole cluster, read next cluster # from FAT
+        if (cluster_left == 0) {
+            fseek(in, fat_start + cluster * 2, SEEK_SET);
+            fread(&cluster, 2, 1, in);
+
+            printf("End of cluster reached, next cluster %d\n", cluster);
+
+            fseek(in, data_start + cluster_size * (cluster - 2), SEEK_SET);
+            cluster_left = cluster_size; // reset cluster byte counter
+        }
+    }
+}
+
 int main(int argc, char** argv) {
-    FILE * in = fopen("disco2.IMA", "rb");
+    FILE * in = fopen("disco2.IMA", "rb"), * out;
     PartitionTable pt[4];
     Fat16BootSector bs;
     Fat16Entry entry;
     short op;
     unsigned long fat_start, root_start, data_start;
+    char filename[9] = "        "; // initially pad with spaces
+    char filename_aux[8];
+
+    int i;
 
     fseek(in, 0x1BE, SEEK_SET); // go to partition table start
     fread(pt, sizeof (PartitionTable), 4, in); // read all four entries
-    readPartitionTable(pt);
+    printPartitionTable(pt);
 
     fseek(in, 0x000, SEEK_SET);
     fread(&bs, sizeof (Fat16BootSector), 1, in);
-    readBootSector(bs, in);
+    printBootSector(bs, in);
 
     // Calculate start offsets of FAT, root directory and data
     fat_start = ftell(in) + (bs.reserved_sectors - 1) * bs.sector_size;
@@ -178,10 +227,35 @@ int main(int argc, char** argv) {
             fat_start, root_start, data_start);
 
     fseek(in, root_start, SEEK_SET);
-    readRootDirectory(entry, bs, in);
+    printRootDirectory(entry, bs, in);
 
+    printf("\n---------- Informe o arquivo para extrair os dados ----------\n");
+    printf("Nome: ");
+    scanf("%s", filename_aux);
 
+    for (i = 0; i < 8 && filename_aux[i] && filename_aux[i] != 0; i++)
+        filename[i] = filename_aux[i];
+
+    fseek(in, root_start, SEEK_SET);
+
+    for (i = 0; i < bs.root_dir_entries; i++) {
+        fread(&entry, sizeof (entry), 1, in);
+        if (entry.filename[0] != '\0') {
+            if (0 == memcmp(entry.filename, filename, 8)) {
+                printf("%s\n", entry.filename);
+                printf("File found!\n");
+                break;
+            }
+        }
+    }
+
+    out = fopen("out.txt", "wb"); // write the file contents to disk
+    readFile(in, out, fat_start, data_start, bs.sectors_per_cluster *
+            bs.sector_size, entry.starting_cluster, entry.file_size);
+
+    fclose(out);
     fclose(in);
+
     return 0;
 }
 
