@@ -1,0 +1,14 @@
+http://www.tavi.co.uk/phobos/fat.html
+
+http://www.beginningtoseethelight.org/fat16/index.htm
+
+http://www.maverick-os.dk/FileSystemFormats/FAT16_FileSystem.html
+
+https://bitismyth.wordpress.com/2015/12/29/fat12-fat16-e-fat32-sistemas-de-arquivos-simples/
+
+http://codeandlife.com/2012/04/02/simple-fat-and-sd-tutorial-part-1/
+
+http://www.karbosguide.com/hardware/module6a4.htm
+
+https://github.com/papirix/FAT16/blob/master/FAT16/src/Fat16.java
+
