@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include "fileutils.h"
 #include "string.h"
+#include <math.h>
 #include "time.h"
 #include "structs.h"
 
@@ -65,31 +66,44 @@ void readFile(FILE * in, FILE * out,
 
 void writeFile(FILE * dest, FILE * src , int root_start, int data_start, Fat16BootSector bs ){
 
-    fseek(dest, root_start, SEEK_SET);
-
-
-
-    short sizes = 0;
-    int entry_count = 0;
-    int lastm = 0;
-    char reservedl[10];
-    int i;
-    Fat16Entry entry;
-    for (i = 0; i < bs.root_dir_entries; i++) {
-        fread(&entry, sizeof (entry), 1, dest);
-        entry_count++;
-        if (entry.filename[0] == '\0') {
-            break;
-        }
-
-        strcpy(reservedl ,  entry.reserved);
-        sizes += multiply512(entry.file_size, &lastm);
+    short cluster = 0xFFFF;
+    int fat_start = 512;
+    int count_cluster = 0;
+    while(cluster != 0x0000){
+        fseek(src, fat_start + cluster * 2, SEEK_SET);
+        fread(&cluster, 2, 1, dest);
+        count_cluster++;
     }
+
+    --count_cluster;
 
     fseek(src, 0L, SEEK_END);
     int sz = ftell(src);
     fseek(src, 0x0, SEEK_SET);
 
+    int file_clusters = ceill(sz / 512.f);
+    int i;
+
+    if(file_clusters == 1){
+        short a = 0xFFFF;
+        fseek(dest, fat_start + count_cluster  * 2, SEEK_SET);
+        fwrite(&a, 2, 1, dest);
+    }else{
+        short c = count_cluster;
+        short cluster2 = cluster;
+        short cluster_test;
+        for(i = 0; i < file_clusters; i++){
+            fseek(src, fat_start + ((c + i) * 2), SEEK_SET);
+            fread(&cluster_test, 2, 1, dest);
+            if(cluster_test == 0x0000){
+                fwrite(&cluster2, 2, 1, dest);
+                cluster2++;
+            } else {
+                c++;
+                i--;
+            }
+        }
+    }
 
     Fat16Entry  file ;
     file.creation_date = time(NULL);
@@ -97,20 +111,73 @@ void writeFile(FILE * dest, FILE * src , int root_start, int data_start, Fat16Bo
     file.creation_time = 8;
     strcpy(file.filename, "lixo    ");
     strcpy(file.ext , "txt");
-    file.starting_cluster = 22;
+    file.starting_cluster = cluster;
 
     strcmp(file.reserved, "          ");
 
-
-    int tst = root_start + sizeof(Fat16Entry) * (entry_count - 1);
+    //TODO fix this shit, bianka is your fault. I wanted make beautiful.
+    int tst = root_start + sizeof(Fat16Entry) * 3;
 
     fseek(dest, tst, SEEK_SET);
-    fwrite(&file, sizeof(Fat16Entry), 1, src);
+    fwrite(&file, sizeof(Fat16Entry), 1, dest);
 
 
-    int bianka = data_start + sizes;
-    fseek(dest, bianka, SEEK_SET);
-    fwrite(src, 8 * sizeof(char), 1, dest);
+    int current_pos = data_start + (count_cluster * 512);
+
+
+    char bianka_vai_dar_uma_olhada_nisso_no_final_de_semana[8] = "12345678";
+    fseek(dest, current_pos, SEEK_SET);
+    fwrite(bianka_vai_dar_uma_olhada_nisso_no_final_de_semana, 8 , 1, dest);
+
+
+
+
+
+
+
+//
+//    fseek(dest, root_start, SEEK_SET);
+//
+//    short sizes = 0;
+//    int entry_count = 0;
+//    int lastm = 0;
+//    char reservedl[10];
+//    int i;
+//    Fat16Entry entry;
+//    for (i = 0; i < bs.root_dir_entries; i++) {
+//        fread(&entry, sizeof (entry), 1, dest);
+//        entry_count++;
+//        if (entry.filename[0] == '\0') {
+//            break;
+//        }
+//
+//        strcpy(reservedl ,  entry.reserved);
+//        sizes += multiply512(entry.file_size, &lastm);
+//    }
+//
+
+//
+//
+//    Fat16Entry  file ;
+//    file.creation_date = time(NULL);
+//    file.file_size = sz;
+//    file.creation_time = 8;
+//    strcpy(file.filename, "lixo    ");
+//    strcpy(file.ext , "txt");
+//    file.starting_cluster = 22;
+//
+//    strcmp(file.reserved, "          ");
+//
+//
+//    int tst = root_start + sizeof(Fat16Entry) * (entry_count - 1);
+//
+//    fseek(dest, tst, SEEK_SET);
+//    fwrite(&file, sizeof(Fat16Entry), 1, src);
+//
+//
+//    int bianka = data_start + sizes;
+//    fseek(dest, bianka, SEEK_SET);
+//    fwrite(src, 8 * sizeof(char), 1, dest);
 }
 
 void extractFile(FILE * in,
@@ -140,6 +207,6 @@ void extractFile(FILE * in,
 
 
     readFile(in, out, fat_start, data_start, bs.sectors_per_cluster *
-            bs.sector_size, entry.starting_cluster, entry.file_size);
+                                             bs.sector_size, entry.starting_cluster, entry.file_size);
 
 }
