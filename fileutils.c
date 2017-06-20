@@ -69,11 +69,22 @@ void writeFile(FILE * dest, FILE * src , int root_start, int data_start, Fat16Bo
     short cluster = 0xFFFF;
     int fat_start = 512;
     int count_cluster = 0;
-    while(cluster != 0x0000){
-        fseek(src, fat_start + cluster * 2, SEEK_SET);
+
+    int j;
+    for(j = fat_start; j <  1024  ; j += 2){
+        fseek(src, j, SEEK_SET);
         fread(&cluster, 2, 1, dest);
-        count_cluster++;
+        if(cluster != 0x0000)
+            count_cluster++;
     }
+
+
+//    while(cluster != 0x0000){
+//        j = fat_start + cluster * 2;
+//        fseek(src, j, SEEK_SET);
+//        fread(&cluster, 2, 1, dest);
+//        count_cluster++;
+//    }
 
     --count_cluster;
 
@@ -116,7 +127,7 @@ void writeFile(FILE * dest, FILE * src , int root_start, int data_start, Fat16Bo
     strcmp(file.reserved, "          ");
 
     //TODO fix this shit, bianka is your fault. I wanted make beautiful.
-    int tst = root_start + sizeof(Fat16Entry) * 3;
+    int tst = root_start + sizeof(Fat16Entry) * 2;
 
     fseek(dest, tst, SEEK_SET);
     fwrite(&file, sizeof(Fat16Entry), 1, dest);
