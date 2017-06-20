@@ -99,9 +99,9 @@ void printFileInfo(Fat16Entry *entry) {
             printf("File: [%.8s.%.3s]\n", entry->filename, entry->ext);
     }
 
-    printf("  Modified: %04d-%02d-%02d %02d:%02d.%02d    Start: [%04X]    Size: %d\n",
+    printf("  Modified: %04d-%02d-%02d %02d:%02d.%02d    Start: [%d]    Size: %d Atr: %d \n",
            1980 + (entry->creation_time >> 9), (entry->creation_time >> 5) & 0xF, entry->creation_time & 0x1F,
            (entry->creation_time >> 11), (entry->creation_time >> 5) & 0x3F, entry->creation_time & 0x1F,
-           entry->starting_cluster, entry->file_size);
+           entry->starting_cluster, entry->file_size, entry->attributes);
 }
 
