@@ -47,17 +47,17 @@ int main(int argc, char** argv) {
     printRootDirectory(bs, in);
 
 
-    printf("\n---------- Informe o arquivo para extrair os dados ----------\n");
-    printf("Nome: ");
-    scanf("%s", filename_aux);
-    out = fopen("out.txt", "wb"); // write the file contents to disk
-    extractFile(in, out, filename_aux, bs, root_start, fat_start, data_start);
+//    printf("\n---------- Informe o arquivo para extrair os dados ----------\n");
+//    printf("Nome: ");
+//    scanf("%s", filename_aux);
+//    out = fopen("out.txt", "wb"); // write the file contents to disk
+//    extractFile(in, out, filename_aux, bs, root_start, fat_start, data_start);
 
-//    FILE*  f = fopen("/home/edgar/workspace/FAT16/build/lixo.txt", "rb");
-//    writeFile(in, f, root_start, data_start, bs);
-//    fclose(in);
-//    fclose(f);
-    fclose(out);
+    FILE*  f = fopen("/home/edgar/workspace/FAT16/dracula", "rb");
+    writeFile(in, f, root_start, data_start, bs);
+    fclose(in);
+    fclose(f);
+//    fclose(out);
     return 0;
 }
 
