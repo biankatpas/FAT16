@@ -170,8 +170,8 @@ void writeFile(FILE * dest, FILE * src , int root_start, int data_start, Fat16Bo
     file.creation_date = time(NULL);
     file.file_size = sz;
     file.creation_time = 8;
-    strcpy(file.filename, "lixo   ");
-    strcpy(file.ext , "txt");
+    strcpy(file.filename, "LIXO   ");
+    strcpy(file.ext , "TXT");
     file.starting_cluster = count_cluster ;
 
     strcmp(file.reserved, "          ");
