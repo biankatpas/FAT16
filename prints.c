@@ -29,7 +29,7 @@ int printPartitionTable(PartitionTable pt[]) {
 }
 
 
-void printBootSector(Fat16BootSector bs, FILE * in) {
+void printBootSector(Fat16BootSector bs, FILE *in) {
     printf("\n\n---------- Fat16 Boot Sector ----------\n\n");
     printf("  Jump code: %02X:%02X:%02X\n", bs.jmp[0], bs.jmp[1], bs.jmp[2]);
     printf("  OEM code: [%.8s]\n", bs.oem);
@@ -61,11 +61,11 @@ void printBootSector(Fat16BootSector bs, FILE * in) {
 }
 
 
-int printRootDirectory(Fat16BootSector bs, FILE * in) {
+int printRootDirectory(Fat16BootSector bs, FILE *in) {
     Fat16Entry entry;
     int i = 0, j = 0;
     for (i = 0; i < bs.root_dir_entries; i++) {
-        fread(&entry, sizeof (entry), 1, in);
+        fread(&entry, sizeof(entry), 1, in);
 
         if (entry.filename[0] != '\0') {
             printFileInfo(&entry);

@@ -55,7 +55,6 @@ int main(int argc, char **argv) {
 
         case 3:
             printf("\n---------- Informe o arquivo para extrair os dados ----------\n");
-            printf("Nome: ");
             scanf("%s", filename_aux);
             out = fopen("/home/biankatpas/Dropbox/NetBeansProjects/Fat16/out.txt",
                         "wb"); // write the file contents to disk
@@ -63,10 +62,46 @@ int main(int argc, char **argv) {
             fclose(out);
             break;
         case 4:
-            //printf("\n---------- Informe o arquivo para gravar os dados ----------\n");
-            //printf("Nome: ");
-            write = fopen("/home/biankatpas/Dropbox/NetBeansProjects/Fat16/dracula", "rb");
-            writeFile(in, write, root_start, data_start, bs);
+            printf("\n---------- Informe o caminho total (FULL_PATH) do arquivo para gravar os dados ----------\n");
+            char * nao = malloc(256 * sizeof(char));
+            scanf("%s", nao );
+            printf("\n%s", nao);
+//            write = fopen("/home/biankatpas/Dropbox/NetBeansProjects/Fat16/dracula", "rb");
+            write = fopen(nao, "rb");
+            int i, j;
+            char extension[3] = {0};
+            char file_name[8] = {0};
+            int point = 0;
+            int count = 0;
+            for(i=256 ; i > 0; i--){
+                if(nao[i] == '/'){
+                    for(j=1; j < 256 - i ; j++){
+                        if(nao[i + j] == '.' || nao[i+j] == '\0') {
+                            if(nao[i+j] == '.'){
+                                extension[0] = nao[i+j+1];
+                                extension[1] = nao[i+j+2];
+                                extension[2] = nao[i+j+3];
+                            }
+                            break;
+                        }else{
+                            if(count < 8) {
+                                file_name[count] = nao[i+j];
+                            }
+                            count ++;
+
+                        }
+                    }
+                    break;
+                }
+
+            }
+
+            while(count < 8){
+                file_name[count] = ' ';
+                count++;
+            }
+
+            writeFile(in, write, root_start, data_start, bs, file_name, extension);
             printf("finished");
             fclose(write);
             break;

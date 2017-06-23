@@ -15,7 +15,13 @@ void readFile(FILE * in, FILE * out,
               unsigned short cluster,
               unsigned long file_size);
 
-void writeFile(FILE * dest, FILE * src , int root_start, int data_start, Fat16BootSector bs );
+void writeFile(FILE * dest,
+               FILE * src ,
+               int root_start,
+               int data_start,
+               Fat16BootSector bs,
+               char file_name[],
+               char extension[]);
 
 void extractFile(FILE * in,
                  FILE * out,
@@ -24,5 +30,7 @@ void extractFile(FILE * in,
                  int root_start,
                  unsigned long fat_start,
                  unsigned  long data_start);
+
+int countEntries(Fat16BootSector bs, FILE * in, int root_start);
 
 #endif //FAT16_FILEUTILS_H
