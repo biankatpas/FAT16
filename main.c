@@ -34,10 +34,10 @@ int main(int argc, char **argv) {
 
     printf("********** FAT 16 **********\n");
     printf("1 - info\n");
-    printf("2 - ls\n");
-    printf("3 - cat\n");
-    printf("4 - wr\n");
-    printf("5 - rm\n");
+    printf("2 - List Files\n");
+    printf("3 - Copy a file to output\n");
+    printf("4 - Write a file\n");
+    printf("5 - Remove a file\n");
     printf("****************************\n");
     scanf("%hd", &op);
 
@@ -56,9 +56,7 @@ int main(int argc, char **argv) {
         case 3:
             printf("\n---------- Informe o arquivo para extrair os dados ----------\n");
             scanf("%s", filename_aux);
-            out = fopen("/home/biankatpas/Dropbox/NetBeansProjects/Fat16/out.txt",
-                        "wb"); // write the file contents to disk
-            extractFile(in, out, filename_aux, bs, root_start, fat_start, data_start);
+            extractFile(in, filename_aux, bs, root_start, fat_start, data_start);
             fclose(out);
             break;
         case 4:
@@ -66,7 +64,6 @@ int main(int argc, char **argv) {
             char * nao = malloc(256 * sizeof(char));
             scanf("%s", nao );
             printf("\n%s", nao);
-//            write = fopen("/home/biankatpas/Dropbox/NetBeansProjects/Fat16/dracula", "rb");
             write = fopen(nao, "rb");
             int i, j;
             char extension[3] = {0};

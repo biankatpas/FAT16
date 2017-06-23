@@ -9,6 +9,10 @@
 #include "time.h"
 #include "structs.h"
 
+typedef unsigned char bool;
+#define true 1;
+#define false 0;
+
 
 void int2Hex(int quotient, char ret[]) {
     int temp, i = 3;
@@ -267,7 +271,6 @@ void writeFile(FILE *dest,
 
 
 void extractFile(FILE *in,
-                 FILE *out,
                  char name[],
                  Fat16BootSector bs,
                  int root_start,
@@ -285,18 +288,31 @@ void extractFile(FILE *in,
 
     fseek(in, root_start, SEEK_SET);
     Fat16Entry entry;
+    bool found = false;
     for (i = 0; i < bs.root_dir_entries; i++) {
         fread(&entry, sizeof(entry), 1, in);;
         if (entry.filename[0] != '\0') {
             if (0 == memcmp(entry.filename, filename, 8)) {
+                found = true;
                 break;
             }
         }
     }
 
+    if(!found){
+        printf("File not found");
+        return;
+    }else{
 
-    readFile(in, out, fat_start, data_start, bs.sectors_per_cluster *
-                                             bs.sector_size, entry.starting_cluster, entry.file_size);
+        //TODO ta bizzarro isso aqui
+        char name[20] = "/home/biankatpas/";
+
+        FILE * out = fopen(strcat(name,entry.filename), "wb");
+        readFile(in, out, fat_start, data_start, bs.sectors_per_cluster *
+                                                 bs.sector_size, entry.starting_cluster, entry.file_size);
+    }
+
+
 
 
 }
