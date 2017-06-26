@@ -10,6 +10,37 @@
 #include "structs.h"
 
 
+void parseInput(char* in, int size, char* file_name, char * extension){
+    int i, j;
+    int count = 0;
+    for(i=size ; i > 0; i--){
+        if(in[i] == '/'){
+            for(j=1; j < size - i ; j++){
+                if(in[i + j] == '.' || in[i+j] == '\0') {
+                    if(in[i+j] == '.'){
+                        extension[0] = in[i+j+1];
+                        extension[1] = in[i+j+2];
+                        extension[2] = in[i+j+3];
+                    }
+                    break;
+                }else{
+                    if(count < 8) {
+                        file_name[count] = in[i+j];
+                    }
+                    count ++;
+                }
+            }
+            break;
+        }
+
+    }
+
+    while(count < 8){
+        file_name[count] = ' ';
+        count++;
+    }
+}
+
 void int2Hex(int quotient, char ret[]) {
     int temp, i = 3;
 

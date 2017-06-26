@@ -33,4 +33,6 @@ void extractFile(FILE * in,
 
 int countEntries(Fat16BootSector bs, FILE * in, int root_start);
 
+void parseInput(char* in, int size, char* file_name, char * extension);
+
 #endif //FAT16_FILEUTILS_H
