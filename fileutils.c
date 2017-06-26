@@ -176,47 +176,20 @@ void writeFile(FILE *dest,
     fseek(dest, second_fat + (temp_number - 1) * 2, SEEK_SET);
     fwrite(&a, 2, 1, dest);
 
-//
-//    if(file_clusters == 1){
-//        short a = 0xFFFF;
-//        fseek(dest, fat_start + count_cluster  * 2, SEEK_SET);
-//        fwrite(&a, 2, 1, dest);
-//        fseek(dest, second_fat + count_cluster  * 2, SEEK_SET);
-//        fwrite(&a, 2, 1, dest);
-//    }else{
-//        short c = count_cluster;
-//        short cluster_test;
-//        int z = 0;
-//        for(z ; z < 2 ; z++) {
-//            short cluster2 = cluster;
-//            for(i = 0; i < file_clusters; i++){
-//                fseek(src, (fat_start + ((second_fat - 512) * z)) + ((c + i) * 2), SEEK_SET);
-//                fread(&cluster_test, 2, 1, dest);
-//                if(cluster_test == 0x0000){
-//                    fwrite(&cluster2, 2, 1, dest);
-//                    cluster2++;
-//                } else {
-//                    c++;
-//                    i--;
-//                }
-//            }
-//        }
-//    }
-
-    Fat16Entry file;
+    /*Fat16Entry file;
     file.attributes = 2;
     file.creation_date = time(NULL);
     file.file_size = sz;
     file.creation_time = 8;
-    ///TODO pass name
     strcpy(file.filename, file_name);
     strcpy(file.ext, extension);
     ///
     file.starting_cluster = count_cluster;
-
     strcmp(file.reserved, "          ");
+    */
 
-    int tst = root_start + sizeof(Fat16Entry) * countEntries(bs, dest, root_start);
+    Fat16Entry file = setEntry(file_name, extension, count_cluster, sz);
+git    int tst = root_start + sizeof(Fat16Entry) * countEntries(bs, dest, root_start);
 
     fseek(dest, tst, SEEK_SET);
     fwrite(&file, sizeof(Fat16Entry), 1, dest);
@@ -228,72 +201,8 @@ void writeFile(FILE *dest,
     memset(buffer, 0, 512 * file_clusters * sizeof(char));
     fseek(dest, current_pos, SEEK_SET);
 
-//    if(sz < 512) {
     fread(buffer, sz, 1, src);
     fwrite(buffer, sz, 1, dest);
-
-//    }
-//    else{
-//        for(i = 0 ; i < file_clusters ; i++){
-//            fseek(src, 512 * i, SEEK_SET);
-//            fread(buffer, 512, 1, src);
-//            fseek(dest, current_pos + 512 * i, SEEK_SET);
-//            fwrite(buffer, 512, 1, dest);
-//
-//        }
-//    }
-
-//    char bianka_vai_dar_uma_olhada_nisso_no_final_de_semana[8] = "12345678";
-
-
-
-
-
-
-
-//
-//    fseek(dest, root_start, SEEK_SET);
-//
-//    short sizes = 0;
-//    int entry_count = 0;
-//    int lastm = 0;
-//    char reservedl[10];
-//    int i;
-//    Fat16Entry entry;
-//    for (i = 0; i < bs.root_dir_entries; i++) {
-//        fread(&entry, sizeof (entry), 1, dest);
-//        entry_count++;
-//        if (entry.filename[0] == '\0') {
-//            break;
-//        }
-//
-//        strcpy(reservedl ,  entry.reserved);
-//        sizes += multiply512(entry.file_size, &lastm);
-//    }
-//
-
-//
-//
-//    Fat16Entry  file ;
-//    file.creation_date = time(NULL);
-//    file.file_size = sz;
-//    file.creation_time = 8;
-//    strcpy(file.filename, "lixo    ");
-//    strcpy(file.ext , "txt");
-//    file.starting_cluster = 22;
-//
-//    strcmp(file.reserved, "          ");
-//
-//
-//    int tst = root_start + sizeof(Fat16Entry) * (entry_count - 1);
-//
-//    fseek(dest, tst, SEEK_SET);
-//    fwrite(&file, sizeof(Fat16Entry), 1, src);
-//
-//
-//    int bianka = data_start + sizes;
-//    fseek(dest, bianka, SEEK_SET);
-//    fwrite(src, 8 * sizeof(char), 1, dest);
 }
 
 
@@ -345,6 +254,22 @@ int countEntries(Fat16BootSector bs, FILE *in, int root_start) {
     }
 
     return j;
+}
+
+Fat16Entry setEntry(char file_name[], char extension[], int count_cluster, int sz) {
+    Fat16Entry file;
+
+    file.attributes = 2;
+    file.creation_date = time(NULL);
+    file.file_size = sz;
+    file.creation_time = 8;
+    strcpy(file.filename, file_name);
+    strcpy(file.ext, extension);
+    ///
+    file.starting_cluster = count_cluster;
+    strcmp(file.reserved, "          ");
+
+    return file;
 }
 
 
