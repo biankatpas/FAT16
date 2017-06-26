@@ -189,7 +189,7 @@ void writeFile(FILE *dest,
     */
 
     Fat16Entry file = setEntry(file_name, extension, count_cluster, sz);
-git    int tst = root_start + sizeof(Fat16Entry) * countEntries(bs, dest, root_start);
+    int tst = root_start + sizeof(Fat16Entry) * countEntries(bs, dest, root_start);
 
     fseek(dest, tst, SEEK_SET);
     fwrite(&file, sizeof(Fat16Entry), 1, dest);

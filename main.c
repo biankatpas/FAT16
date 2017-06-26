@@ -7,17 +7,54 @@
 
 
 #include <stdlib.h>
+#include <string.h>
 #include "structs.h"
 #include "prints.h"
 #include "fileutils.h"
 
+char disk_image[256] = {0};
+char input_dir[256] = {0};
+char output_dir[256] = {0};
+int parseArgs(int argc, char** argv){
+    int i;
+    for(i = 0; i< argc; i++){
+        if(argv[i][0] == '-'){
+            if(strcmp(argv[i], "-f") == 0 ){
+                strcpy(disk_image, argv[i+1]);
+                return 1;
+            }
+            if(strcmp(argv[i], "-i") == 0){
+                strcpy(input_dir, argv[i+1]);
+                return 1;
+            }
 
+            if(strcmp(argv[i], "-o") == 0){
+                strcpy(output_dir, argv[i+1]);
+                return 1;
+            }
+
+            if(strcmp(argv[i], "-help") == 0){
+                printf("Usage:\n\t-f\tImage File\n\t-i\tInput Folder\n\t-o\tOutput Folder\n\t-help\tShows this help\n");
+                return 0;
+            }
+
+
+
+
+        }
+
+    }
+
+}
 
 
 
 int main(int argc, char **argv) {
 
-    FILE *in = fopen("/home/biankatpas/Dropbox/NetBeansProjects/Fat16/disco2.IMA", "r+"), *out, *write;
+    if(!parseArgs(argc, argv))
+        return 1;
+
+    FILE *in = fopen(disk_image, "r+"), *out, *write;
     PartitionTable pt[4];
     Fat16BootSector bs;
     short op = 0;
