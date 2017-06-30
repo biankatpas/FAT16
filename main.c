@@ -21,16 +21,13 @@ int parseArgs(int argc, char** argv){
         if(argv[i][0] == '-'){
             if(strcmp(argv[i], "-f") == 0 ){
                 strcpy(disk_image, argv[i+1]);
-                return 1;
             }
             if(strcmp(argv[i], "-i") == 0){
                 strcpy(input_dir, argv[i+1]);
-                return 1;
             }
 
             if(strcmp(argv[i], "-o") == 0){
                 strcpy(output_dir, argv[i+1]);
-                return 1;
             }
 
             if(strcmp(argv[i], "-help") == 0){
@@ -54,7 +51,12 @@ int main(int argc, char **argv) {
     if(!parseArgs(argc, argv))
         return 1;
 
-    FILE *in = fopen(disk_image, "r+"), *out, *write;
+    FILE *in = fopen(disk_image, "r+"),  *write;
+    if(!in){
+        printf("Arquivo de imagem nao foi encontrado");
+        exit(1);
+    }
+
     PartitionTable pt[4];
     Fat16BootSector bs;
     short op = 0;
@@ -97,19 +99,30 @@ int main(int argc, char **argv) {
         case 3:
             printf("\n---------- Informe o arquivo para extrair os dados ----------\n");
             scanf("%s", filename_aux);
-            out = fopen("/home/biankatpas/Dropbox/NetBeansProjects/Fat16/out.txt",
-                        "wb"); // write the file contents to disk
-            extractFile(in, out, filename_aux, bs, root_start, fat_start, data_start);
-            fclose(out);
+             // write the file contents to disk
+            extractFile(in,  filename_aux, bs, root_start, fat_start, data_start, output_dir);
             break;
         case 4:
-            printf("\n---------- Informe o caminho total (FULL_PATH) do arquivo para gravar os dados ----------\n");
+            printf("\n---------- Informe o nome do arquivo para gravar os dados ----------\n");
             char * name = malloc(256 * sizeof(char));
-            write = fopen(name, "rb");
+            int pass = 0;
+            char * nao, la;
+            do {
+                scanf("%s", name);
+                la = input_dir;
+                nao = strcat(input_dir, name);
+                write = fopen(input_dir, "rb");
+                if (write == 0)
+                    printf("Arquivo nao encontrado \nDigite novamente:");
+                else
+                    pass = 1;
+            }while(pass == 0);
+
 
             char extension[3] = {0};
             char file_name[8] = {0};
-            parseInput(name, 256, file_name, extension);
+            parseInput(input_dir, 256, file_name, extension);
+            int a = 1;
 
             writeFile(in, write, root_start, data_start, bs, file_name, extension);
             printf("finished");

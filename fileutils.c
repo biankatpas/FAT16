@@ -6,6 +6,7 @@
 #include "fileutils.h"
 #include "string.h"
 #include <math.h>
+#include <stdlib.h>
 #include "time.h"
 #include "structs.h"
 
@@ -13,7 +14,7 @@
 void parseInput(char* in, int size, char* file_name, char * extension){
     int i, j;
     int count = 0;
-    for(i=size ; i > 0; i--){
+    for(i=size-1 ; i > 0; i--){
         if(in[i] == '/'){
             for(j=1; j < size - i ; j++){
                 if(in[i + j] == '.' || in[i+j] == '\0') {
@@ -123,9 +124,11 @@ void writeFile(FILE *dest,
                int root_start,
                int data_start,
                Fat16BootSector bs,
-               char file_name[],
-               char extension[]) {
+               char file_name[8],
+               char extension[3]) {
 
+
+    /// 
     short cluster = 0xFFFF;
     int fat_start = 512;
     int count_cluster = 0;
@@ -207,12 +210,13 @@ void writeFile(FILE *dest,
 
 
 void extractFile(FILE *in,
-                 FILE *out,
+
                  char name[],
                  Fat16BootSector bs,
                  int root_start,
                  unsigned long fat_start,
-                 unsigned long data_start) {
+                 unsigned long data_start,
+                 char dir[]   ) {
     char filename[8] = "        ";
     int i;
     if (strlen(name) > 8) {
@@ -232,12 +236,26 @@ void extractFile(FILE *in,
                 break;
             }
         }
+
+
     }
+
+    char * out_filename[12] = {0};
+    if(entry.ext[0]){
+        strcat(out_filename,name);
+        strcat(out_filename,".");
+        strcat(out_filename,entry.ext);
+    }
+
+    strcat(dir, out_filename);
+    FILE * out = fopen(dir,
+                       "ab+");
 
 
     readFile(in, out, fat_start, data_start, bs.sectors_per_cluster *
                                              bs.sector_size, entry.starting_cluster, entry.file_size);
 
+    fclose(out);
 
 }
 

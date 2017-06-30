@@ -20,16 +20,16 @@ void writeFile(FILE * dest,
                int root_start,
                int data_start,
                Fat16BootSector bs,
-               char file_name[],
-               char extension[]);
+               char file_name[8],
+               char extension[3]);
 
 void extractFile(FILE * in,
-                 FILE * out,
                  char name[],
                  Fat16BootSector bs,
                  int root_start,
                  unsigned long fat_start,
-                 unsigned  long data_start);
+                 unsigned  long data_start,
+                 char dir[]);
 
 int countEntries(Fat16BootSector bs, FILE * in, int root_start);
 
