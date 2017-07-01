@@ -311,15 +311,14 @@ int countEntries(Fat16BootSector bs, FILE *in, int root_start) {
 Fat16Entry setEntry(char file_name[], char extension[], int count_cluster, int sz) {
     Fat16Entry file;
 
-    file.attributes = 2;
     file.creation_date = time(NULL);
     file.file_size = sz;
     file.creation_time = 8;
     strcpy(file.filename, file_name);
     strcpy(file.ext, extension);
-    ///
     file.starting_cluster = count_cluster;
     strcmp(file.reserved, "          ");
+    file.attributes = 2;
 
     return file;
 }
