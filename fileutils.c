@@ -128,7 +128,7 @@ void writeFile(FILE *dest,
                char extension[3]) {
 
 
-    /// 
+    /// Gravar o endereço do proximo
     short cluster = 0xFFFF;
     int fat_start = 512;
     int count_cluster = 0;
@@ -136,14 +136,26 @@ void writeFile(FILE *dest,
     int j;
     int second_fat = bs.sectors_per_fat * bs.sector_size + fat_start;
 
+
+
+    short start_cluster = 0;
     for (j = fat_start; j < second_fat; j += 2) {
         fseek(dest, j, SEEK_SET);
         fread(&cluster, 2, 1, dest);
-        if (cluster != 0x0000)
-            count_cluster++;
+        if (cluster == 0x0000){
+            break;
+        }
+        start_cluster++;
     }
 
-    count_cluster;
+
+//    for (j = fat_start; j < second_fat; j += 2) {
+//        fseek(dest, j, SEEK_SET);
+//        fread(&cluster, 2, 1, dest);
+//        if (cluster != 0x0000)
+//            count_cluster++;
+//    }
+
 
     fseek(src, 0L, SEEK_END);
     int sz = ftell(src);
@@ -155,29 +167,49 @@ void writeFile(FILE *dest,
     short a = 0xFFFF;
     j = fat_start;
     int temp_number = 0;
+
+
+    short cluster_map[file_clusters+1];
+    int map_count_cluster = -1;
+    short temp_start_cluster = start_cluster;
+
     for (i = 0; i < file_clusters; i++) {
         short tmpc;
         for (j; j < second_fat; j += 2) {
-            fseek(dest, fat_start + temp_number * 2, SEEK_SET);
-            temp_number++;
+            ++map_count_cluster;
+            fseek(dest, fat_start + map_count_cluster * 2, SEEK_SET);
             fread(&tmpc, 2, 1, dest);
             if (tmpc == 0x0000) {
-
                 break;
             }
         }
-        short t = 0xFFFF;
-        int x = count_cluster + i + 1;
-        fseek(dest, fat_start + (temp_number - 1) * 2, SEEK_SET);
-        fwrite(&x, 2, 1, dest);
-        fseek(dest, second_fat + (temp_number - 1) * 2, SEEK_SET);
-        fwrite(&x, 2, 1, dest);
-        j += 2;
+        cluster_map[i] = map_count_cluster;
+        j+=2;
     }
-    fseek(dest, fat_start + (temp_number - 1) * 2, SEEK_SET);
-    fwrite(&a, 2, 1, dest);
-    fseek(dest, second_fat + (temp_number - 1) * 2, SEEK_SET);
-    fwrite(&a, 2, 1, dest);
+
+    cluster_map[file_clusters] = 0xFFFF;
+
+    int confia = 1;
+
+    for(i = 0 ;i< file_clusters; i++){
+        fseek(dest, fat_start + cluster_map[i] * 2, SEEK_SET);
+        fwrite(&cluster_map[i+1], 2, 1, dest);
+        fseek(dest, second_fat + cluster_map[i] * 2, SEEK_SET);
+        fwrite(&cluster_map[i+1], 2, 1, dest);
+    }
+//        short t = 0xFFFF;
+//        int x = temp_start_cluster;
+//        fseek(dest, fat_start + (temp_number - 1) * 2, SEEK_SET);
+//        fwrite(&x, 2, 1, dest);
+//        fseek(dest, second_fat + (temp_number - 1) * 2, SEEK_SET);
+//        fwrite(&x, 2, 1, dest);
+//        j += 2;
+//    }
+//
+//    fseek(dest, fat_start + (temp_number - 1) * 2, SEEK_SET);
+//    fwrite(&a, 2, 1, dest);
+//    fseek(dest, second_fat + (temp_number - 1) * 2, SEEK_SET);
+//    fwrite(&a, 2, 1, dest);
 
     /*Fat16Entry file;
     file.attributes = 2;
@@ -191,14 +223,14 @@ void writeFile(FILE *dest,
     strcmp(file.reserved, "          ");
     */
 
-    Fat16Entry file = setEntry(file_name, extension, count_cluster, sz);
+    Fat16Entry file = setEntry(file_name, extension, start_cluster, sz);
     int tst = root_start + sizeof(Fat16Entry) * countEntries(bs, dest, root_start);
 
     fseek(dest, tst, SEEK_SET);
     fwrite(&file, sizeof(Fat16Entry), 1, dest);
 
 
-    int current_pos = data_start + ((count_cluster - 2) * 512);
+    int current_pos = data_start + ((start_cluster - 2) * 512);
 
     char buffer[512 * file_clusters];
     memset(buffer, 0, 512 * file_clusters * sizeof(char));
