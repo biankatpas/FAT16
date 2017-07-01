@@ -276,11 +276,13 @@ void extractFile(FILE *in,
         strcat(out_filename,name);
         strcat(out_filename,".");
         strcat(out_filename,entry.ext);
+    }else{
+        strcat(out_filename,name);
     }
 
+
     strcat(dir, out_filename);
-    FILE * out = fopen(dir,
-                       "ab+");
+    FILE * out = fopen(dir, "ab+");
 
 
     readFile(in, out, fat_start, data_start, bs.sectors_per_cluster *
