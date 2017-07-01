@@ -142,10 +142,9 @@ void writeFile(FILE *dest,
     for (j = fat_start; j < second_fat; j += 2) {
         fseek(dest, j, SEEK_SET);
         fread(&cluster, 2, 1, dest);
-        if (cluster == 0x0000){
-            break;
+        if (cluster != 0x0000){
+            start_cluster++;
         }
-        start_cluster++;
     }
 
 
