@@ -230,14 +230,50 @@ void writeFile(FILE *dest,
     fwrite(&file, sizeof(Fat16Entry), 1, dest);
 
 
+
+    char buffer[file_clusters][512];
+    char ** buffers = 0;
+
+    buffers = malloc(file_clusters * sizeof(char) * 512);
+    for(i=0; i < file_clusters; i++){
+        buffers[i] = malloc(512 * sizeof(char));
+    }
+
+//    memset(buffer, 0, 512 * file_clusters * sizeof(char));
+
+    int temp_sz = sz;
+    for(i = 0; i < file_clusters ;i++){
+
+        fseek(src, 512 * i, SEEK_SET);
+        if(temp_sz - 512 >= 0){
+            fread(buffers[i], 512 , 1, src );
+            temp_sz -= 512;
+
+        }else{
+            fread(buffers[i], temp_sz, 1, src);
+            for(j=temp_sz; j < 512; j++)
+                buffers[i][j] = 0;
+
+        }
+
+        printf("%s", buffers[i]);
+    }
+
+
     int current_pos = data_start + ((start_cluster - 2) * 512);
-
-    char buffer[512 * file_clusters];
-    memset(buffer, 0, 512 * file_clusters * sizeof(char));
     fseek(dest, current_pos, SEEK_SET);
+    fwrite(buffers[0], 512, 1, dest);
 
-    fread(buffer, sz, 1, src);
-    fwrite(buffer, sz, 1, dest);
+//
+    for(i = 1; i < file_clusters ; i++){
+        current_pos = data_start + ((cluster_map[i] - 2) * 512);
+        fseek(dest, current_pos, SEEK_SET);
+        fwrite(buffers[i], 512, 1, dest);
+
+    }
+
+
+//    fread(buffer, sz, 1, src);
 }
 
 
