@@ -105,13 +105,15 @@ int main(int argc, char **argv) {
         case 4:
             printf("\n---------- Informe o nome do arquivo para gravar os dados ----------\n");
             char * name = malloc(256 * sizeof(char));
+            char * tname = malloc(256 * sizeof(char));
             int pass = 0;
             char * nao, la;
             do {
+                strcpy(tname, input_dir);
                 scanf("%s", name);
                 la = input_dir;
-                nao = strcat(input_dir, name);
-                write = fopen(input_dir, "rb");
+                nao = strcat(tname, name);
+                write = fopen(tname, "rb");
                 if (write == 0)
                     printf("Arquivo nao encontrado \nDigite novamente:");
                 else
@@ -121,7 +123,7 @@ int main(int argc, char **argv) {
 
             char extension[3] = {0};
             char file_name[8] = {0};
-            parseInput(input_dir, 256, file_name, extension);
+            parseInput(tname, 256, file_name, extension);
             int a = 1;
 
             writeFile(in, write, root_start, data_start, bs, file_name, extension);

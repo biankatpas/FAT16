@@ -338,10 +338,10 @@ int countEntries(Fat16BootSector bs, FILE *in, int root_start) {
     fseek(in, root_start, SEEK_SET);
     for (i = 0; i < bs.root_dir_entries; i++) {
         fread(&entry, sizeof(entry), 1, in);
-
-        if (entry.filename[0] != '\0') {
-            j++;
+        if (entry.filename[0] == '\0') {
+            break;
         }
+        j++;
     }
 
     return j;
@@ -349,12 +349,14 @@ int countEntries(Fat16BootSector bs, FILE *in, int root_start) {
 
 Fat16Entry setEntry(char file_name[], char extension[], int count_cluster, int sz) {
     Fat16Entry file;
-
+    int i = 0;
     file.creation_date = time(NULL);
     file.file_size = sz;
     file.creation_time = 8;
-    strcpy(file.filename, file_name);
-    strcpy(file.ext, extension);
+    for(i = 0; i < 8; i++)
+        file.filename[i] = file_name[i];
+    for(i = 0; i < 3; i++)
+        file.ext[i] = extension[i];
     file.starting_cluster = count_cluster;
     strcmp(file.reserved, "          ");
     file.attributes = 2;
