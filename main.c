@@ -15,44 +15,51 @@
 char disk_image[256] = {0};
 char input_dir[256] = {0};
 char output_dir[256] = {0};
-int parseArgs(int argc, char** argv){
+
+void waitEnter(){
+    int c;
+    do {
+        c = getchar();
+    }while(c != '\n' && c != EOF);
+    if (c == EOF) {
+        // input stream ended, do something about it, exit perhaps
+    } else {
+        printf("\nPressione Enter para continuar..\n");
+        getchar();
+    }
+}
+
+int parseArgs(int argc, char **argv) {
     int i;
-    for(i = 0; i< argc; i++){
-        if(argv[i][0] == '-'){
-            if(strcmp(argv[i], "-f") == 0 ){
-                strcpy(disk_image, argv[i+1]);
+    for (i = 0; i < argc; i++) {
+        if (argv[i][0] == '-') {
+            if (strcmp(argv[i], "-f") == 0) {
+                strcpy(disk_image, argv[i + 1]);
             }
-            if(strcmp(argv[i], "-i") == 0){
-                strcpy(input_dir, argv[i+1]);
-            }
-
-            if(strcmp(argv[i], "-o") == 0){
-                strcpy(output_dir, argv[i+1]);
+            if (strcmp(argv[i], "-i") == 0) {
+                strcpy(input_dir, argv[i + 1]);
             }
 
-            if(strcmp(argv[i], "-help") == 0){
+            if (strcmp(argv[i], "-o") == 0) {
+                strcpy(output_dir, argv[i + 1]);
+            }
+
+            if (strcmp(argv[i], "-help") == 0) {
                 printf("Usage:\n\t-f\tImage File\n\t-i\tInput Folder\n\t-o\tOutput Folder\n\t-help\tShows this help\n");
                 return 0;
             }
-
-
-
-
         }
-
     }
-
 }
-
 
 
 int main(int argc, char **argv) {
 
-    if(!parseArgs(argc, argv))
+    if (!parseArgs(argc, argv))
         return 1;
 
-    FILE *in = fopen(disk_image, "r+"),  *write;
-    if(!in){
+    FILE *in = fopen(disk_image, "r+"), *write;
+    if (!in) {
         printf("Arquivo de imagem nao foi encontrado");
         exit(1);
     }
@@ -62,6 +69,7 @@ int main(int argc, char **argv) {
     short op = 0;
     unsigned long fat_start, root_start, data_start;
     char filename_aux[8];
+    int control = 1;
 
     fseek(in, 0x1BE, SEEK_SET); // go to partition table start
     fread(pt, sizeof(PartitionTable), 4, in); // read all four entries
@@ -75,76 +83,90 @@ int main(int argc, char **argv) {
                              bs.sector_size;
     data_start = root_start + bs.root_dir_entries * sizeof(Fat16Entry);
 
-    printf("********** FAT 16 **********\n");
-    printf("1 - info\n");
-    printf("2 - ls\n");
-    printf("3 - cat\n");
-    printf("4 - wr\n");
-    printf("5 - rm\n");
-    printf("****************************\n");
-    scanf("%hd", &op);
-
-    switch (op) {
-        case 1:
-            printPartitionTable(pt);
-            printBootSector(bs, in);
-            printf("FAT start at %08X, root dir at %08X, data at %08X\n\n", fat_start, root_start, data_start);
-            break;
-
-        case 2:
-            fseek(in, root_start, SEEK_SET);
-            printRootDirectory(bs, in);
-            break;
-
-        case 3:
-            printf("\n---------- Informe o arquivo para extrair os dados ----------\n");
-            scanf("%s", filename_aux);
-             // write the file contents to disk
-            extractFile(in,  filename_aux, bs, root_start, fat_start, data_start, output_dir);
-            break;
-        case 4:
-            printf("\n---------- Informe o nome do arquivo para gravar os dados ----------\n");
-            char * name = malloc(256 * sizeof(char));
-            char * tname = malloc(256 * sizeof(char));
-            int pass = 0;
-            char * nao, la;
-            do {
-                strcpy(tname, input_dir);
-                scanf("%s", name);
-                la = input_dir;
-                nao = strcat(tname, name);
-                write = fopen(tname, "rb");
-                if (write == 0)
-                    printf("Arquivo nao encontrado \nDigite novamente:");
-                else
-                    pass = 1;
-            }while(pass == 0);
 
 
-            char extension[3] = {0};
-            char file_name[8] = {0};
-            parseInput(tname, 256, file_name, extension);
-            int a = 1;
-
-            writeFile(in, write, root_start, data_start, bs, file_name, extension);
-            printf("finished");
-            fclose(write);
-            break;
+    while (control == 1) {
 
 
-        case 5:
-            printf("\n---------- Informe o arquivo para deletar ----------\n");
-            scanf("%s", filename_aux);
-            deleteFile(in,filename_aux, bs, fat_start, root_start);
-            break;
-        default:
-            printf("Informe uma op valida");
-            break;
+        printf("*********** FAT 16 ***********\n");
+        printf("1 - Informacoes do boot sector\n");
+        printf("2 - Listar arquivos\n");
+        printf("3 - Extrair arquivo\n");
+        printf("4 - Escrever arquivo\n");
+        printf("5 - Remover arquivo \n");
+        printf("6 - Sair\n");
+        printf("******************************\n");
+        scanf("%hd", &op);
+
+        switch (op) {
+            case 1:
+                printPartitionTable(pt);
+                printBootSector(bs, in);
+                printf("FAT start at %08X, root dir at %08X, data at %08X\n\n", fat_start, root_start, data_start);
+                break;
+
+            case 2:
+                fseek(in, root_start, SEEK_SET);
+                printRootDirectory(bs, in);
+                break;
+
+            case 3:
+                printf("\n---------- Informe o arquivo para extrair os dados ----------\n");
+                scanf("%s", filename_aux);
+                // write the file contents to disk
+                extractFile(in, filename_aux, bs, root_start, fat_start, data_start, output_dir);
+                break;
+            case 4:
+                printf("\n---------- Informe o nome do arquivo para gravar os dados ----------\n");
+                char *name = malloc(256 * sizeof(char));
+                char *tname = malloc(256 * sizeof(char));
+                int pass = 0;
+                char *nao, la;
+                do {
+                    strcpy(tname, input_dir);
+                    scanf("%s", name);
+                    la = input_dir;
+                    nao = strcat(tname, name);
+                    write = fopen(tname, "rb");
+                    if (write == 0)
+                        printf("Arquivo nao encontrado \nDigite novamente:");
+                    else
+                        pass = 1;
+                } while (pass == 0);
+
+
+                char extension[3] = {0};
+                char file_name[8] = {0};
+                parseInput(tname, 256, file_name, extension);
+                int a = 1;
+
+                writeFile(in, write, root_start, data_start, bs, file_name, extension);
+                printf("finished");
+                fclose(write);
+                break;
+
+            case 5:
+                printf("\n---------- Informe o arquivo para deletar ----------\n");
+                scanf("%s", filename_aux);
+                deleteFile(in, filename_aux, bs, fat_start, root_start);
+                break;
+
+            case 6:
+                printf("\nEncerrando....");
+                control = 0;
+                break;
+
+            default:
+                printf("Informe uma op valida");
+                break;
+        }
+        waitEnter();
+        int i;
+        for(i=0;i<50;i++)
+            printf("\n");
     }
 
-
     fclose(in);
-
     return 0;
 }
 

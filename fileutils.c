@@ -42,37 +42,6 @@ void parseInput(char* in, int size, char* file_name, char * extension){
     }
 }
 
-void int2Hex(int quotient, char ret[]) {
-    int temp, i = 3;
-
-
-    while (quotient != 0) {
-        temp = quotient % 16;
-
-        //To convert integer into character
-        if (temp < 10)
-            temp = temp + 48;
-        else
-            temp = temp + 55;
-
-        if (i == -1)
-            break;
-
-        ret[i--] = temp;
-        quotient = quotient / 16;
-    }
-
-}
-
-int multiply512(int a, int *multiply) {
-    int count = 0;
-    *multiply = 0;
-    while (count < a) {
-        count += 512;
-        *multiply += 1;
-    }
-    return count;
-}
 
 void readFile(FILE *in, FILE *out,
               unsigned long fat_start,
@@ -128,10 +97,8 @@ void writeFile(FILE *dest,
                char extension[3]) {
 
 
-    /// Gravar o endereço do proximo
     short cluster = 0xFFFF;
     int fat_start = 512;
-    int count_cluster = 0;
 
     int j;
     int second_fat = bs.sectors_per_fat * bs.sector_size + fat_start;
@@ -152,15 +119,10 @@ void writeFile(FILE *dest,
 
     int file_clusters = ceill(sz / 512.f);
     int i;
-
     short a = 0xFFFF;
     j = fat_start;
-    int temp_number = 0;
-
-
     short cluster_map[file_clusters+1];
     int map_count_cluster = -1;
-    short temp_start_cluster = start_cluster;
 
     for (i = 0; i < file_clusters; i++) {
         short tmpc;
@@ -228,10 +190,6 @@ void writeFile(FILE *dest,
 
 }
 
-
-
-
-
 void deleteFile(FILE *in,
                 char name[],
                 Fat16BootSector bs,
@@ -264,8 +222,6 @@ void deleteFile(FILE *in,
     short v [sizeof(Fat16Entry)] = {0x0000};
     fwrite(v, sizeof(Fat16Entry), 1, in);
 
-
-
     short zero = 0x0000;
 
 
@@ -278,9 +234,7 @@ void deleteFile(FILE *in,
         fwrite(&zero, 2, 1, in);
 
     }
-
 }
-
 
 void extractFile(FILE *in,
 
@@ -324,12 +278,10 @@ void extractFile(FILE *in,
     strcat(dir, out_filename);
     FILE * out = fopen(dir, "ab+");
 
-
     readFile(in, out, fat_start, data_start, bs.sectors_per_cluster *
                                              bs.sector_size, entry.starting_cluster, entry.file_size);
 
     fclose(out);
-
 }
 
 int countEntries(Fat16BootSector bs, FILE *in, int root_start) {
@@ -363,5 +315,3 @@ Fat16Entry setEntry(char file_name[], char extension[], int count_cluster, int s
 
     return file;
 }
-
-
