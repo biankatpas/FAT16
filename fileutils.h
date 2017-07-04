@@ -15,6 +15,12 @@ void readFile(FILE * in, FILE * out,
               unsigned short cluster,
               unsigned long file_size);
 
+void deleteFile(FILE *in,
+                char name[],
+                Fat16BootSector bs,
+                unsigned long fat_start,
+                unsigned long root_start);
+
 void writeFile(FILE * dest,
                FILE * src ,
                int root_start,

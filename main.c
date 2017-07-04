@@ -128,6 +128,13 @@ int main(int argc, char **argv) {
             printf("finished");
             fclose(write);
             break;
+
+
+        case 5:
+            printf("\n---------- Informe o arquivo para deletar ----------\n");
+            scanf("%s", filename_aux);
+            deleteFile(in,filename_aux, bs, fat_start, root_start);
+            break;
         default:
             printf("Informe uma op valida");
             break;

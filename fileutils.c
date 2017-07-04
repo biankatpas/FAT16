@@ -136,8 +136,6 @@ void writeFile(FILE *dest,
     int j;
     int second_fat = bs.sectors_per_fat * bs.sector_size + fat_start;
 
-
-
     short start_cluster = 0;
     for (j = fat_start; j < second_fat; j += 2) {
         fseek(dest, j, SEEK_SET);
@@ -147,15 +145,6 @@ void writeFile(FILE *dest,
         }
         start_cluster++;
     }
-
-
-//    for (j = fat_start; j < second_fat; j += 2) {
-//        fseek(dest, j, SEEK_SET);
-//        fread(&cluster, 2, 1, dest);
-//        if (cluster != 0x0000)
-//            count_cluster++;
-//    }
-
 
     fseek(src, 0L, SEEK_END);
     int sz = ftell(src);
@@ -189,7 +178,6 @@ void writeFile(FILE *dest,
 
     cluster_map[file_clusters] = 0xFFFF;
 
-    int confia = 1;
 
     for(i = 0 ;i< file_clusters; i++){
         fseek(dest, fat_start + cluster_map[i] * 2, SEEK_SET);
@@ -197,31 +185,6 @@ void writeFile(FILE *dest,
         fseek(dest, second_fat + cluster_map[i] * 2, SEEK_SET);
         fwrite(&cluster_map[i+1], 2, 1, dest);
     }
-//        short t = 0xFFFF;
-//        int x = temp_start_cluster;
-//        fseek(dest, fat_start + (temp_number - 1) * 2, SEEK_SET);
-//        fwrite(&x, 2, 1, dest);
-//        fseek(dest, second_fat + (temp_number - 1) * 2, SEEK_SET);
-//        fwrite(&x, 2, 1, dest);
-//        j += 2;
-//    }
-//
-//    fseek(dest, fat_start + (temp_number - 1) * 2, SEEK_SET);
-//    fwrite(&a, 2, 1, dest);
-//    fseek(dest, second_fat + (temp_number - 1) * 2, SEEK_SET);
-//    fwrite(&a, 2, 1, dest);
-
-    /*Fat16Entry file;
-    file.attributes = 2;
-    file.creation_date = time(NULL);
-    file.file_size = sz;
-    file.creation_time = 8;
-    strcpy(file.filename, file_name);
-    strcpy(file.ext, extension);
-    ///
-    file.starting_cluster = count_cluster;
-    strcmp(file.reserved, "          ");
-    */
 
     Fat16Entry file = setEntry(file_name, extension, start_cluster, sz);
     int tst = root_start + sizeof(Fat16Entry) * countEntries(bs, dest, root_start);
@@ -229,9 +192,6 @@ void writeFile(FILE *dest,
     fseek(dest, tst, SEEK_SET);
     fwrite(&file, sizeof(Fat16Entry), 1, dest);
 
-
-
-    char buffer[file_clusters][512];
     char ** buffers = 0;
 
     buffers = malloc(file_clusters * sizeof(char) * 512);
@@ -239,24 +199,18 @@ void writeFile(FILE *dest,
         buffers[i] = malloc(512 * sizeof(char));
     }
 
-//    memset(buffer, 0, 512 * file_clusters * sizeof(char));
 
     int temp_sz = sz;
     for(i = 0; i < file_clusters ;i++){
-
         fseek(src, 512 * i, SEEK_SET);
         if(temp_sz - 512 >= 0){
             fread(buffers[i], 512 , 1, src );
             temp_sz -= 512;
-
         }else{
             fread(buffers[i], temp_sz, 1, src);
             for(j=temp_sz; j < 512; j++)
                 buffers[i][j] = 0;
-
         }
-
-        printf("%s", buffers[i]);
     }
 
 
@@ -264,7 +218,6 @@ void writeFile(FILE *dest,
     fseek(dest, current_pos, SEEK_SET);
     fwrite(buffers[0], 512, 1, dest);
 
-//
     for(i = 1; i < file_clusters ; i++){
         current_pos = data_start + ((cluster_map[i] - 2) * 512);
         fseek(dest, current_pos, SEEK_SET);
@@ -273,7 +226,59 @@ void writeFile(FILE *dest,
     }
 
 
-//    fread(buffer, sz, 1, src);
+}
+
+
+
+
+
+void deleteFile(FILE *in,
+                char name[],
+                Fat16BootSector bs,
+                unsigned long fat_start,
+                unsigned long root_start){
+    char filename[8] = "        ";
+    int i;
+    if (strlen(name) > 8) {
+        printf("FILENAME INVALID");
+        return;
+    }
+
+    for (i = 0; i < 8 && name[i] && name[i] != 0; i++)
+        filename[i] = name[i];
+
+    fseek(in, root_start, SEEK_SET);
+    Fat16Entry entry;
+    for (i = 0; i < bs.root_dir_entries; i++) {
+        fread(&entry, sizeof(entry), 1, in);;
+        if (entry.filename[0] != '\0') {
+            if (0 == memcmp(entry.filename, filename, 8)) {
+                break;
+            }
+        }
+    }
+
+    unsigned short cluster = entry.starting_cluster;
+    fseek(in, root_start + (sizeof(Fat16Entry)) * i, SEEK_SET);
+
+    short v [sizeof(Fat16Entry)] = {0x0000};
+    fwrite(v, sizeof(Fat16Entry), 1, in);
+
+
+
+    short zero = 0x0000;
+
+
+    unsigned short temp_c;
+    while (cluster != 0xFFFF && cluster != 0) {
+        temp_c = cluster;
+        fseek(in, fat_start + (cluster * 2), SEEK_SET);
+        fread(&cluster, 2, 1, in);
+        fseek(in, fat_start + (temp_c * 2), SEEK_SET);
+        fwrite(&zero, 2, 1, in);
+
+    }
+
 }
 
 
@@ -304,8 +309,6 @@ void extractFile(FILE *in,
                 break;
             }
         }
-
-
     }
 
     char * out_filename[12] = {0};
