@@ -185,6 +185,10 @@ void writeFile(FILE *dest,
 
     }
 
+    for (i = 0; i < file_clusters; i++) {
+        free(buffers[i]);
+    }
+    free(buffers);
 
 }
 
