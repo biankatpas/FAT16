@@ -16,11 +16,11 @@ char disk_image[256] = {0};
 char input_dir[256] = {0};
 char output_dir[256] = {0};
 
-void waitEnter(){
+void waitEnter() {
     int c;
     do {
         c = getchar();
-    }while(c != '\n' && c != EOF);
+    } while (c != '\n' && c != EOF);
     if (c == EOF) {
         // input stream ended, do something about it, exit perhaps
     } else {
@@ -68,7 +68,6 @@ int main(int argc, char **argv) {
     Fat16BootSector bs;
     short op = 0;
     unsigned long fat_start, root_start, data_start;
-    char filename_aux[8];
     int control = 1;
 
     fseek(in, 0x1BE, SEEK_SET); // go to partition table start
@@ -82,7 +81,6 @@ int main(int argc, char **argv) {
     root_start = fat_start + bs.sectors_per_fat * bs.number_of_fats *
                              bs.sector_size;
     data_start = root_start + bs.root_dir_entries * sizeof(Fat16Entry);
-
 
 
     while (control == 1) {
@@ -112,6 +110,7 @@ int main(int argc, char **argv) {
 
             case 3:
                 printf("\n---------- Informe o arquivo para extrair os dados ----------\n");
+                char filename_aux[8] = {0};
                 scanf("%s", filename_aux);
                 // write the file contents to disk
                 extractFile(in, filename_aux, bs, root_start, fat_start, data_start, output_dir);
@@ -121,12 +120,11 @@ int main(int argc, char **argv) {
                 char *name = malloc(256 * sizeof(char));
                 char *tname = malloc(256 * sizeof(char));
                 int pass = 0;
-                char *nao, la;
+
                 do {
                     strcpy(tname, input_dir);
                     scanf("%s", name);
-                    la = input_dir;
-                    nao = strcat(tname, name);
+                    strcat(tname, name);
                     write = fopen(tname, "rb");
                     if (write == 0)
                         printf("Arquivo nao encontrado \nDigite novamente:");
@@ -138,17 +136,19 @@ int main(int argc, char **argv) {
                 char extension[3] = {0};
                 char file_name[8] = {0};
                 parseInput(tname, 256, file_name, extension);
-                int a = 1;
 
-                writeFile(in, write, root_start, data_start, bs, file_name, extension);
+                writeFile(in, write, root_start, data_start, bs, file_name, extension, fat_start);
                 printf("finished");
                 fclose(write);
+                free(name);
+                free(tname);
                 break;
 
             case 5:
                 printf("\n---------- Informe o arquivo para deletar ----------\n");
-                scanf("%s", filename_aux);
-                deleteFile(in, filename_aux, bs, fat_start, root_start);
+                char filename_del[8] = {0};
+                scanf("%s", filename_del);
+                deleteFile(in, filename_del, bs, fat_start, root_start);
                 break;
 
             case 6:
@@ -162,7 +162,7 @@ int main(int argc, char **argv) {
         }
         waitEnter();
         int i;
-        for(i=0;i<50;i++)
+        for (i = 0; i < 50; i++)
             printf("\n");
     }
 

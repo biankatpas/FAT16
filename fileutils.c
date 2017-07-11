@@ -11,24 +11,24 @@
 #include "structs.h"
 
 
-void parseInput(char* in, int size, char* file_name, char * extension){
+void parseInput(char *in, int size, char *file_name, char *extension) {
     int i, j;
     int count = 0;
-    for(i=size-1 ; i > 0; i--){
-        if(in[i] == '/'){
-            for(j=1; j < size - i ; j++){
-                if(in[i + j] == '.' || in[i+j] == '\0') {
-                    if(in[i+j] == '.'){
-                        extension[0] = in[i+j+1];
-                        extension[1] = in[i+j+2];
-                        extension[2] = in[i+j+3];
+    for (i = size - 1; i > 0; i--) {
+        if (in[i] == '/') {
+            for (j = 1; j < size - i; j++) {
+                if (in[i + j] == '.' || in[i + j] == '\0') {
+                    if (in[i + j] == '.') {
+                        extension[0] = in[i + j + 1];
+                        extension[1] = in[i + j + 2];
+                        extension[2] = in[i + j + 3];
                     }
                     break;
-                }else{
-                    if(count < 8) {
-                        file_name[count] = in[i+j];
+                } else {
+                    if (count < 8) {
+                        file_name[count] = in[i + j];
                     }
-                    count ++;
+                    count++;
                 }
             }
             break;
@@ -36,7 +36,7 @@ void parseInput(char* in, int size, char* file_name, char * extension){
 
     }
 
-    while(count < 8){
+    while (count < 8) {
         file_name[count] = ' ';
         count++;
     }
@@ -94,12 +94,10 @@ void writeFile(FILE *dest,
                int data_start,
                Fat16BootSector bs,
                char file_name[8],
-               char extension[3]) {
+               char extension[3], int fat_start) {
 
 
     short cluster = 0xFFFF;
-    int fat_start = 512;
-
     int j;
     int second_fat = bs.sectors_per_fat * bs.sector_size + fat_start;
 
@@ -107,7 +105,7 @@ void writeFile(FILE *dest,
     for (j = fat_start; j < second_fat; j += 2) {
         fseek(dest, j, SEEK_SET);
         fread(&cluster, 2, 1, dest);
-        if (cluster == 0x0000){
+        if (cluster == 0x0000) {
             break;
         }
         start_cluster++;
@@ -119,9 +117,8 @@ void writeFile(FILE *dest,
 
     int file_clusters = ceill(sz / 512.f);
     int i;
-    short a = 0xFFFF;
     j = fat_start;
-    short cluster_map[file_clusters+1];
+    short cluster_map[file_clusters + 1];
     int map_count_cluster = -1;
 
     for (i = 0; i < file_clusters; i++) {
@@ -135,17 +132,17 @@ void writeFile(FILE *dest,
             }
         }
         cluster_map[i] = map_count_cluster;
-        j+=2;
+        j += 2;
     }
 
     cluster_map[file_clusters] = 0xFFFF;
 
 
-    for(i = 0 ;i< file_clusters; i++){
+    for (i = 0; i < file_clusters; i++) {
         fseek(dest, fat_start + cluster_map[i] * 2, SEEK_SET);
-        fwrite(&cluster_map[i+1], 2, 1, dest);
+        fwrite(&cluster_map[i + 1], 2, 1, dest);
         fseek(dest, second_fat + cluster_map[i] * 2, SEEK_SET);
-        fwrite(&cluster_map[i+1], 2, 1, dest);
+        fwrite(&cluster_map[i + 1], 2, 1, dest);
     }
 
     Fat16Entry file = setEntry(file_name, extension, start_cluster, sz);
@@ -154,36 +151,37 @@ void writeFile(FILE *dest,
     fseek(dest, tst, SEEK_SET);
     fwrite(&file, sizeof(Fat16Entry), 1, dest);
 
-    char ** buffers = 0;
+    char **buffers = 0;
+    int cluster_size = bs.sectors_per_cluster * bs.sector_size;
+    buffers = malloc(file_clusters * sizeof(char) * cluster_size);
 
-    buffers = malloc(file_clusters * sizeof(char) * 512);
-    for(i=0; i < file_clusters; i++){
-        buffers[i] = malloc(512 * sizeof(char));
+    for (i = 0; i < file_clusters; i++) {
+        buffers[i] = malloc(cluster_size * sizeof(char));
     }
 
 
     int temp_sz = sz;
-    for(i = 0; i < file_clusters ;i++){
-        fseek(src, 512 * i, SEEK_SET);
-        if(temp_sz - 512 >= 0){
-            fread(buffers[i], 512 , 1, src );
-            temp_sz -= 512;
-        }else{
+    for (i = 0; i < file_clusters; i++) {
+        fseek(src, cluster_size * i, SEEK_SET);
+        if (temp_sz - cluster_size >= 0) {
+            fread(buffers[i], cluster_size, 1, src);
+            temp_sz -= cluster_size;
+        } else {
             fread(buffers[i], temp_sz, 1, src);
-            for(j=temp_sz; j < 512; j++)
+            for (j = temp_sz; j < cluster_size; j++)
                 buffers[i][j] = 0;
         }
     }
 
 
-    int current_pos = data_start + ((start_cluster - 2) * 512);
+    int current_pos = data_start + ((start_cluster - 2) * cluster_size);
     fseek(dest, current_pos, SEEK_SET);
-    fwrite(buffers[0], 512, 1, dest);
+    fwrite(buffers[0], cluster_size, 1, dest);
 
-    for(i = 1; i < file_clusters ; i++){
-        current_pos = data_start + ((cluster_map[i] - 2) * 512);
+    for (i = 1; i < file_clusters; i++) {
+        current_pos = data_start + ((cluster_map[i] - 2) * cluster_size);
         fseek(dest, current_pos, SEEK_SET);
-        fwrite(buffers[i], 512, 1, dest);
+        fwrite(buffers[i], cluster_size, 1, dest);
 
     }
 
@@ -194,7 +192,7 @@ void deleteFile(FILE *in,
                 char name[],
                 Fat16BootSector bs,
                 unsigned long fat_start,
-                unsigned long root_start){
+                unsigned long root_start) {
     char filename[8] = "        ";
     int i;
     if (strlen(name) > 8) {
@@ -219,7 +217,7 @@ void deleteFile(FILE *in,
     unsigned short cluster = entry.starting_cluster;
     fseek(in, root_start + (sizeof(Fat16Entry)) * i, SEEK_SET);
 
-    short v [sizeof(Fat16Entry)] = {0x0000};
+    short v[sizeof(Fat16Entry)] = {0x0000};
     fwrite(v, sizeof(Fat16Entry), 1, in);
 
     short zero = 0x0000;
@@ -243,7 +241,7 @@ void extractFile(FILE *in,
                  int root_start,
                  unsigned long fat_start,
                  unsigned long data_start,
-                 char dir[]   ) {
+                 char dir[]) {
     char filename[8] = "        ";
     int i;
     if (strlen(name) > 8) {
@@ -265,18 +263,23 @@ void extractFile(FILE *in,
         }
     }
 
-    char * out_filename[12] = {0};
-    if(entry.ext[0]){
-        strcat(out_filename,name);
-        strcat(out_filename,".");
-        strcat(out_filename,entry.ext);
-    }else{
-        strcat(out_filename,name);
+    char *out_filename[12] = {0};
+    if (entry.ext[0]) {
+        char ext[4] = {0};
+        strncpy(ext,entry.ext,3);
+        ext[3] = '\0';
+        strcat(out_filename, name);
+        strcat(out_filename, ".");
+        strcat(out_filename, ext);
+    } else {
+        strcat(out_filename, name);
     }
 
+    char out_dir[256] = {0};
+    strcpy(out_dir, dir);
 
-    strcat(dir, out_filename);
-    FILE * out = fopen(dir, "ab+");
+    strcat(out_dir, out_filename);
+    FILE *out = fopen(out_dir, "ab+");
 
     readFile(in, out, fat_start, data_start, bs.sectors_per_cluster *
                                              bs.sector_size, entry.starting_cluster, entry.file_size);
@@ -305,9 +308,9 @@ Fat16Entry setEntry(char file_name[], char extension[], int count_cluster, int s
     file.creation_date = time(NULL);
     file.file_size = sz;
     file.creation_time = 8;
-    for(i = 0; i < 8; i++)
+    for (i = 0; i < 8; i++)
         file.filename[i] = file_name[i];
-    for(i = 0; i < 3; i++)
+    for (i = 0; i < 3; i++)
         file.ext[i] = extension[i];
     file.starting_cluster = count_cluster;
     strcmp(file.reserved, "          ");

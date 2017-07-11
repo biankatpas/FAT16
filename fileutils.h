@@ -27,7 +27,8 @@ void writeFile(FILE * dest,
                int data_start,
                Fat16BootSector bs,
                char file_name[8],
-               char extension[3]);
+               char extension[3],
+               int fat_start);
 
 void extractFile(FILE * in,
                  char name[],
